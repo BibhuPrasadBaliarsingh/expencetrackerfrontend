@@ -39,16 +39,20 @@ const apiFetch = async (path, { method = "GET", body, token } = {}) => {
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
   const data = isJson ? await res.json() : null;
+  const text = !isJson ? await res.text() : null;
 
   if (!res.ok) {
-    const message = data?.message || `Request failed with status ${res.status}`;
+    const message =
+      data?.message ||
+      (text ? text.slice(0, 300) : null) ||
+      `Request failed with status ${res.status}`;
     const error = new Error(message);
     error.status = res.status;
-    error.data = data;
+    error.data = data || text;
     throw error;
   }
 
-  return data;
+  return data || text;
 };
 
 // ---------------------------
