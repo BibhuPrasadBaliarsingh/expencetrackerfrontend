@@ -29,7 +29,7 @@ const LoginForm = () => {
         }))
     }
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault()
 
         if (!email || !password) {
@@ -37,7 +37,7 @@ const LoginForm = () => {
             return
         }
 
-        const response = login({ email, password })
+        const response = await login({ email, password })
 
         if (response.success) {
             toast.success("Login successful 🎉")

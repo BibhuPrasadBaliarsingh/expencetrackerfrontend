@@ -28,14 +28,14 @@ const ExpenseForm = () => {
   }
 
 
-  const handleExpenseData = (e) => {
+  const handleExpenseData = async (e) => {
   e.preventDefault()
   let response
 
   if (doEditExpense) {
-    response = editExpense(expenseData)
+    response = await editExpense(expenseData)
   } else {
-    response = addNewExpense(expenseData)
+    response = await addNewExpense(expenseData)
   }
 
   if (response.success) {

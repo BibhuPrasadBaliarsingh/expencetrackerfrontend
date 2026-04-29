@@ -31,7 +31,7 @@ const RegistrationForm = () => {
     }))
   }
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
 
     if (!agree) {
@@ -44,7 +44,7 @@ const RegistrationForm = () => {
       return
     }
 
-    const response = register({ name, email, password })
+    const response = await register({ name, email, password })
 
     if (response.success) {
       toast.success(response.message)

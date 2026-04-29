@@ -1,274 +1,257 @@
-const UserVal = "users"
-const UserToken = "currentUser"
-
-// Backend base URL (Render)
-// Use this when switching from localStorage "fake APIs" to real API calls.
 export const API_BASE_URL = "https://expencetrackerbackend-932m.onrender.com";
 
-export const userRegister = ({ name, email, password }) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
+// Local storage keys (keep these stable)
+const AUTH_KEY = "auth"; // { token, user }
 
-    const isExist = users.find(item => item.email === email)
-    if (isExist) return false
+const safeJsonParse = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
 
-    users.push({ name, email, password, expenses: [] })
-    localStorage.setItem(UserVal, JSON.stringify(users))
+export const getAuth = () => safeJsonParse(localStorage.getItem(AUTH_KEY));
 
-    return true
-}
+export const setAuth = ({ token, user }) => {
+  localStorage.setItem(AUTH_KEY, JSON.stringify({ token, user }));
+  // Backward-compat for existing code paths (if any)
+  localStorage.setItem("currentUser", JSON.stringify(user));
+};
 
+export const clearAuth = () => {
+  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem("currentUser");
+};
 
-export const userLogin = ({ email, password }) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = users.find(item => item.email === email)
+export const checkLogin = () => getAuth();
 
-    if (!currentUser) {
-        return { success: false, message: "User not registered" }
-    }
+const apiFetch = async (path, { method = "GET", body, token } = {}) => {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
 
-    if (currentUser.password !== password) {
-        return { success: false, message: "Incorrect password" }
-    }
+  const contentType = res.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  const data = isJson ? await res.json() : null;
 
-    localStorage.setItem(UserToken, JSON.stringify(currentUser))
-    return { success: true, user: currentUser }
-}
+  if (!res.ok) {
+    const message = data?.message || `Request failed with status ${res.status}`;
+    const error = new Error(message);
+    error.status = res.status;
+    error.data = data;
+    throw error;
+  }
 
+  return data;
+};
 
-export const checkLogin = () => {
-    return localStorage.getItem(UserToken)
-}
+// ---------------------------
+// Auth (real backend)
+// ---------------------------
 
+export const userRegister = async ({ name, email, password }) => {
+  try {
+    const data = await apiFetch("/api/auth/register", {
+      method: "POST",
+      body: { name, email, password },
+    });
+
+    // Do not auto-login on register (UX: keep current screen flow)
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+export const userLogin = async ({ email, password }) => {
+  try {
+    const data = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: { email, password },
+    });
+
+    setAuth({ token: data.token, user: data.user });
+    return { success: true, user: data.user, token: data.token };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
 
 export const userLogout = () => {
-    return localStorage.removeItem(UserToken)
-}
+  clearAuth();
+};
 
+// ---------------------------
+// Transactions (real backend)
+// Map existing "expense" UI to backend transactions.
+// ---------------------------
+
+const toDateInputValue = (dateLike) => {
+  if (!dateLike) return "";
+  const d = new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+const normalizeExpense = (t) => ({
+  id: t._id,
+  _id: t._id,
+  amount: t.amount,
+  // UI currently expects `title`, `payment_type`, `description`.
+  // Backend does not store these, so we map `title` to category.
+  title: t.category,
+  category: t.category,
+  date: toDateInputValue(t.date),
+  payment_type: "",
+  description: "",
+  type: t.type,
+});
+
+export const fetchExpenses = async () => {
+  const auth = getAuth();
+  if (!auth?.token) return [];
+
+  try {
+    const data = await apiFetch("/api/transactions", { token: auth.token });
+    return (data || [])
+      .filter((t) => t.type === "expense")
+      .map(normalizeExpense);
+  } catch {
+    return [];
+  }
+};
+
+export const addExpense = async (expense) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  try {
+    const data = await apiFetch("/api/transactions", {
+      method: "POST",
+      token: auth.token,
+      body: {
+        amount: Number(expense.amount),
+        type: "expense",
+        category: expense.category || expense.title || "Miscellaneous",
+        date: expense.date,
+      },
+    });
+
+    return { success: true, data: normalizeExpense(data) };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+export const deleteExpense = async (id) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  try {
+    await apiFetch(`/api/transactions/${id}`, {
+      method: "DELETE",
+      token: auth.token,
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+export const updateExpense = async (updatedExpense) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  const id = updatedExpense?.id || updatedExpense?._id;
+  if (!id) return { success: false, message: "Missing expense id" };
+
+  try {
+    const data = await apiFetch(`/api/transactions/${id}`, {
+      method: "PUT",
+      token: auth.token,
+      body: {
+        amount: Number(updatedExpense.amount),
+        type: "expense",
+        category: updatedExpense.category || updatedExpense.title || "Miscellaneous",
+        date: updatedExpense.date,
+      },
+    });
+
+    return { success: true, data: normalizeExpense(data) };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+// ---------------------------
+// Goals / Profile (still local for now)
+// Store per authenticated user id.
+// ---------------------------
+
+const goalsStorageKey = () => {
+  const auth = getAuth();
+  const userId = auth?.user?.id || auth?.user?._id;
+  return userId ? `goals:${userId}` : 'goals:guest';
+};
 
 export const userUpdate = (profileData) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
+  // Backend currently doesn't expose a profile update endpoint.
+  // Keep profile changes locally (UI-only).
+  const auth = getAuth();
+  if (!auth?.user || !auth?.token) return { success: false, message: 'User not logged in' };
 
-    if (!currentUser) {
-        return { success: false, message: "User not logged in" }
-    }
+  const updatedUser = { ...auth.user, ...profileData };
+  setAuth({ token: auth.token, user: updatedUser });
 
-    const userIndex = users.findIndex(
-        user => user.email === currentUser.email
-    )
-
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    users[userIndex] = {
-        ...users[userIndex],
-        ...profileData
-    };
-
-    // update users array
-    localStorage.setItem(UserVal, JSON.stringify(users));
-
-    // update currentUser
-    localStorage.setItem(
-        "currentUser",
-        JSON.stringify(users[userIndex])
-    );
-
-    return { success: true, data: users[userIndex] };
-}
-
-
-export const addExpense = (expense) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
-
-    if (!currentUser) {
-        return { success: false, message: "Not logged in" }
-    }
-
-    const userIndex = users.findIndex(
-        user => user.email === currentUser.email
-    )
-
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    const newExpense = {
-        id: Date.now(),
-        ...expense
-    }
-
-    if (!users[userIndex].expenses) {
-        users[userIndex].expenses = []
-    }
-    users[userIndex].expenses.push(newExpense)
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-    return { success: true }
-}
-
-export const fetchExpenses = () => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
-
-    if (!currentUser) return []
-
-    const user = users.find(item => item.email === currentUser.email)
-    return user?.expenses || []
-}
-
-export const deleteExpense = (id) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
-
-    if (!currentUser) {
-        return { success: false, message: "Not logged in" }
-    }
-
-    const userIndex = users.findIndex(
-        user => user.email === currentUser.email
-    )
-
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    users[userIndex].expenses =
-        users[userIndex].expenses.filter(item => item.id !== id)
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-
-    return { success: true }
-}
-
-export const updateExpense = (updatedExpense) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
-
-    if (!currentUser) {
-        return { success: false, message: "User not logged in" }
-    }
-
-    const userIndex = users.findIndex(
-        (user) => user.email === currentUser.email
-    )
-
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    users[userIndex].expenses =
-        users[userIndex].expenses.map((expense) =>
-            expense.id === updatedExpense.id
-                ? updatedExpense
-                : expense
-        )
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-
-    return { success: true }
-}
-
-
-
-
-
-// Goals
+  return { success: true, data: updatedUser };
+};
 
 export const addGoal = (goal) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
+  const auth = getAuth();
+  if (!auth?.user || !auth?.token) return { success: false, message: 'Not logged in' };
 
-    if (!currentUser) {
-        return { success: false, message: "Not logged in" }
-    }
+  const key = goalsStorageKey();
+  const goals = safeJsonParse(localStorage.getItem(key)) || [];
 
-    const userIndex = users.findIndex(
-        user => user.email === currentUser.email
-    )
+  const newGoal = { id: Date.now(), ...goal };
+  goals.push(newGoal);
+  localStorage.setItem(key, JSON.stringify(goals));
 
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    const newGoal = {
-        id: Date.now(),
-        ...goal
-    }
-
-    if (!users[userIndex].goals) {
-        users[userIndex].goals = []
-    }
-    users[userIndex].goals.push(newGoal)
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-    return { success: true, message: "Goal created successfully" }
-}
+  return { success: true, message: 'Goal created successfully' };
+};
 
 export const fetchGoals = () => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
+  const auth = getAuth();
+  if (!auth?.user || !auth?.token) return [];
 
-    if (!currentUser) return []
-
-    const user = users.find(item => item.email === currentUser.email)
-    return user?.goals || []
-}
+  const key = goalsStorageKey();
+  return safeJsonParse(localStorage.getItem(key)) || [];
+};
 
 export const deleteGoal = (id) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
+  const auth = getAuth();
+  if (!auth?.user || !auth?.token) return { success: false, message: 'Not logged in' };
 
-    if (!currentUser) {
-        return { success: false, message: "Not logged in" }
-    }
+  const key = goalsStorageKey();
+  const goals = (safeJsonParse(localStorage.getItem(key)) || []).filter((g) => g.id !== id);
+  localStorage.setItem(key, JSON.stringify(goals));
+  return { success: true, message: 'Goal deleted' };
+};
 
-    const userIndex = users.findIndex(
-        user => user.email === currentUser.email
-    )
+export const updateGoals = (updatedGoal) => {
+  const auth = getAuth();
+  if (!auth?.user || !auth?.token) return { success: false, message: 'User not logged in' };
 
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    users[userIndex].goals =
-        users[userIndex].goals.filter(item => item.id !== id)
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-
-    return { success: true, message: "Goal deleted" }
-}
-
-export const updateGoals = (updatedGoals) => {
-    let users = JSON.parse(localStorage.getItem(UserVal)) || []
-    const currentUser = JSON.parse(localStorage.getItem(UserToken))
-
-    if (!currentUser) {
-        return { success: false, message: "User not logged in" }
-    }
-
-    const userIndex = users.findIndex(
-        (user) => user.email === currentUser.email
-    )
-
-    if (userIndex === -1) {
-        return { success: false, message: "User not found" }
-    }
-
-    users[userIndex].goals =
-        users[userIndex].goals.map((goal) =>
-            goal.id === updatedGoals.id
-                ? updatedGoals
-                : goal
-        )
-
-    localStorage.setItem(UserVal, JSON.stringify(users))
-
-    return { success: true, message: "Goal updated" }
-}
-
-
-
-// this is a fake api which will get the users data from the localstorage. Then verifies using isExist if the email is there in the local storage it will return false or else it will return true
+  const key = goalsStorageKey();
+  const goals = (safeJsonParse(localStorage.getItem(key)) || []).map((g) =>
+    g.id === updatedGoal.id ? updatedGoal : g
+  );
+  localStorage.setItem(key, JSON.stringify(goals));
+  return { success: true, message: 'Goal updated' };
+};

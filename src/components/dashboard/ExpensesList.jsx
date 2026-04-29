@@ -69,7 +69,9 @@ const ExpensesList = () => {
                                     </p>
 
                                     <button
-                                        onClick={() => removeExpense(item.id)}
+                                        onClick={async () => {
+                                            await removeExpense(item.id)
+                                        }}
                                         className="mt-2 text-sm px-3 py-1 rounded-lg
                     bg-red-500/10 text-red-500
                     hover:bg-red-500 hover:text-white
