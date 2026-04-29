@@ -1,6 +1,10 @@
 const UserVal = "users"
 const UserToken = "currentUser"
 
+// Backend base URL (Render)
+// Use this when switching from localStorage "fake APIs" to real API calls.
+export const API_BASE_URL = "https://expencetrackerbackend-932m.onrender.com";
+
 export const userRegister = ({ name, email, password }) => {
     let users = JSON.parse(localStorage.getItem(UserVal)) || []
 
