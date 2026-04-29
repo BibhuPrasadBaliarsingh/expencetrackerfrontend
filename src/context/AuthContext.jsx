@@ -6,6 +6,7 @@ import {
   deleteExpense,
   deleteGoal,
   fetchExpenses,
+  fetchInvestments,
   fetchGoals,
   updateExpense,
   updateGoals,
@@ -13,6 +14,9 @@ import {
   userLogout,
   userRegister,
   userUpdate,
+  addInvestment,
+  deleteInvestment,
+  fetchMe,
 } from '../apis'
 
 const AuthContext = createContext(null)
@@ -64,9 +68,12 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Update Profile (still local for now)
-  const update = (profileData) => {
-    const response = userUpdate(profileData)
-    if (response?.success) return { success: true, message: 'Profile updated successfully' }
+  const update = async (profileData) => {
+    const response = await userUpdate(profileData)
+    if (response?.success) {
+      if (response?.data) setUser(response.data)
+      return { success: true, message: 'Profile updated successfully' }
+    }
     return { success: false, message: response?.message || 'Failed to update' }
   }
 
@@ -121,17 +128,50 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    const auth = checkLogin()
-    if (auth?.user) setUser(auth.user)
-    setLoading(false)
+    const init = async () => {
+      const auth = checkLogin()
+      if (auth?.user) setUser(auth.user)
+
+      // If we have a token, refresh user from backend (includes profile fields)
+      if (auth?.token) {
+        const me = await fetchMe()
+        if (me) setUser(me)
+      }
+
+      setLoading(false)
+    }
+
+    init()
   }, [])
 
   useEffect(() => {
     if (user) {
       fetchAllExpenses()
       getGoals()
+      ;(async () => {
+        const data = await fetchInvestments()
+        setInvestments(data)
+      })()
     }
   }, [user])
+
+  const addNewInvestment = async (investmentData) => {
+    const response = await addInvestment(investmentData)
+    if (response.success) {
+      const data = await fetchInvestments()
+      setInvestments(data)
+    }
+    return response
+  }
+
+  const removeInvestment = async (id) => {
+    const response = await deleteInvestment(id)
+    if (response.success) {
+      const data = await fetchInvestments()
+      setInvestments(data)
+    }
+    return response
+  }
 
   return (
     <AuthContext.Provider
@@ -161,6 +201,8 @@ export const AuthProvider = ({ children }) => {
         scrollToSection,
         investments,
         setInvestments,
+        addNewInvestment,
+        removeInvestment,
       }}
     >
       {children}

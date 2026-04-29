@@ -17,6 +17,17 @@ const Contact = () => {
     message: "",
   });
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Placeholder: wire to backend or email service later.
+    setFormData({ name: "", email: "", subject: "", message: "" });
+  };
+
   return (
     <section
       ref={sectionRefs?.contact}
@@ -119,10 +130,14 @@ const Contact = () => {
                 Follow us on social media
               </p>
               <div className="flex gap-4">
-                {[<FaXTwitter />, <FaLinkedin />, <FaInstagram />, <FaFacebookSquare />].map(
-                  (social) => (
+                {[
+                  { id: "twitter", icon: <FaXTwitter /> },
+                  { id: "linkedin", icon: <FaLinkedin /> },
+                  { id: "instagram", icon: <FaInstagram /> },
+                  { id: "facebook", icon: <FaFacebookSquare /> },
+                ].map((social) => (
                     <a
-                      key={social}
+                      key={social.id}
                       href="#"
                       className="w-10 h-10 rounded-full
                                  bg-white dark:bg-[#111C33]
@@ -132,7 +147,7 @@ const Contact = () => {
                                  transition"
                     >
                       <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
-                        {social}
+                        {social.icon}
                       </span>
                     </a>
                   )
@@ -147,7 +162,7 @@ const Contact = () => {
                        rounded-2xl p-8 shadow-lg
                        border border-gray-200 dark:border-white/10"
           >
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -157,6 +172,7 @@ const Contact = () => {
                   <input
                     name="name"
                     value={formData.name}
+                    onChange={handleChange}
                     placeholder="John Doe"
                     required
                     className="w-full px-4 py-3 rounded-xl
@@ -175,6 +191,7 @@ const Contact = () => {
                     name="email"
                     type="email"
                     value={formData.email}
+                    onChange={handleChange}
                     placeholder="john@example.com"
                     required
                     className="w-full px-4 py-3 rounded-xl
@@ -193,6 +210,7 @@ const Contact = () => {
                 <input
                   name="subject"
                   value={formData.subject}
+                  onChange={handleChange}
                   placeholder="How can we help?"
                   required
                   className="w-full px-4 py-3 rounded-xl
@@ -210,6 +228,7 @@ const Contact = () => {
                 <textarea
                   name="message"
                   value={formData.message}
+                  onChange={handleChange}
                   rows={5}
                   required
                   placeholder="Tell us more about your inquiry"

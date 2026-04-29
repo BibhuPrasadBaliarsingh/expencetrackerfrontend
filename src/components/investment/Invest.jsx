@@ -1,9 +1,11 @@
 import React, { useContext } from "react";
 import { useFormik } from "formik";
 import AuthContext from '../../context/AuthContext'
+import { MdDelete } from "react-icons/md";
+import { toast } from "react-toastify";
 
 const Invest = () => {
-  const { setInvestment } = useContext(AuthContext)
+  const { addNewInvestment, investments, removeInvestment } = useContext(AuthContext)
 
   const initialState = {
     title: "",
@@ -17,9 +19,8 @@ const Invest = () => {
   const formik = useFormik({
     initialValues: initialState,
 
-    onSubmit: (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm }) => {
       const newInvestment = {
-        id: Date.now(),
         title: values.title,
         investmentType: values.investmentType,
         investedAmount: Number(values.investedAmount),
@@ -28,9 +29,9 @@ const Invest = () => {
         remarks: values.remarks,
       };
 
-      console.log(newInvestment);
-
-      setInvestment(newInvestment)
+      const response = await addNewInvestment(newInvestment)
+      if (response?.success) toast.success("Investment added")
+      else toast.error(response?.message || "Failed to add investment")
 
       resetForm();
     },
@@ -196,6 +197,62 @@ const Invest = () => {
           </button>
         </div>
       </form>
+
+      {/* Investments List */}
+      <div className="mt-10">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">
+          Your Investments
+        </h2>
+
+        {investments?.length === 0 ? (
+          <div className="flex items-center justify-center h-32 bg-white dark:bg-[#111C33] rounded-xl shadow-md">
+            <p className="text-gray-500 dark:text-gray-400">No investments added yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {investments.map((inv) => (
+              <div
+                key={inv.id}
+                className="bg-white dark:bg-[#111C33] p-4 rounded-xl shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-800 dark:text-white">
+                    {inv.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {inv.investmentType} â€¢ {inv.investmentDate}
+                  </p>
+                  {inv.remarks ? (
+                    <p className="text-xs text-gray-400 mt-1">{inv.remarks}</p>
+                  ) : null}
+                </div>
+
+                <div className="text-left sm:text-right">
+                  <p className="text-lg font-bold text-teal-600">
+                    â‚¹{inv.investedAmount}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    ROI: {inv.interestRate}%
+                  </p>
+
+                  <button
+                    onClick={async () => {
+                      const response = await removeInvestment(inv.id)
+                      if (response?.success) toast.success("Investment deleted")
+                      else toast.error(response?.message || "Failed to delete investment")
+                    }}
+                    className="mt-2 text-sm px-3 py-1 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition"
+                    type="button"
+                    aria-label="Delete investment"
+                  >
+                    <MdDelete />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

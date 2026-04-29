@@ -4,6 +4,7 @@ import { MdDelete } from 'react-icons/md'
 import { FaEdit } from 'react-icons/fa'
 import ExpensesList from './ExpensesList'
 import GoalsList from './GoalsList'
+import InvestmentsList from './InvestmentsList'
 
 const Overview = () => {
   const [activeTab, setActiveTab] = useState("expenses");
@@ -14,8 +15,8 @@ const Overview = () => {
         return <ExpensesList />;
       case "goals":
         return <GoalsList />;
-      // case "investments":
-      //   return <InvestmentList />;
+      case "investments":
+        return <InvestmentsList />;
       default:
         return null;
     }

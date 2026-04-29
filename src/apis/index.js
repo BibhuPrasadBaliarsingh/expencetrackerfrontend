@@ -92,6 +92,49 @@ export const userLogout = () => {
 };
 
 // ---------------------------
+// Users / Profile (real backend)
+// ---------------------------
+
+export const fetchMe = async () => {
+  const auth = getAuth();
+  if (!auth?.token) return null;
+
+  try {
+    const data = await apiFetch("/api/users/me", { token: auth.token });
+    // backend shape: { user }
+    if (data?.user) {
+      setAuth({ token: auth.token, user: data.user });
+      return data.user;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const updateMe = async (profileData) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  try {
+    const data = await apiFetch("/api/users/me", {
+      method: "PUT",
+      token: auth.token,
+      body: profileData,
+    });
+
+    if (data?.user) {
+      setAuth({ token: auth.token, user: data.user });
+      return { success: true, data: data.user };
+    }
+
+    return { success: false, message: "Failed to update profile" };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+// ---------------------------
 // Transactions (real backend)
 // Map existing "expense" UI to backend transactions.
 // ---------------------------
@@ -194,6 +237,72 @@ export const updateExpense = async (updatedExpense) => {
 };
 
 // ---------------------------
+// Investments (real backend)
+// ---------------------------
+
+const normalizeInvestment = (i) => ({
+  id: i._id,
+  _id: i._id,
+  title: i.title,
+  investmentType: i.investmentType,
+  investedAmount: i.investedAmount,
+  interestRate: i.interestRate,
+  investmentDate: toDateInputValue(i.investmentDate),
+  remarks: i.remarks || "",
+});
+
+export const fetchInvestments = async () => {
+  const auth = getAuth();
+  if (!auth?.token) return [];
+
+  try {
+    const data = await apiFetch("/api/investments", { token: auth.token });
+    return (data || []).map(normalizeInvestment);
+  } catch {
+    return [];
+  }
+};
+
+export const addInvestment = async (investment) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  try {
+    const data = await apiFetch("/api/investments", {
+      method: "POST",
+      token: auth.token,
+      body: {
+        title: investment.title,
+        investmentType: investment.investmentType,
+        investedAmount: Number(investment.investedAmount),
+        interestRate: Number(investment.interestRate),
+        investmentDate: investment.investmentDate,
+        remarks: investment.remarks || "",
+      },
+    });
+
+    return { success: true, data: normalizeInvestment(data) };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+export const deleteInvestment = async (id) => {
+  const auth = getAuth();
+  if (!auth?.token) return { success: false, message: "Not logged in" };
+
+  try {
+    await apiFetch(`/api/investments/${id}`, {
+      method: "DELETE",
+      token: auth.token,
+    });
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
+};
+
+// ---------------------------
 // Goals / Profile (still local for now)
 // Store per authenticated user id.
 // ---------------------------
@@ -204,17 +313,7 @@ const goalsStorageKey = () => {
   return userId ? `goals:${userId}` : 'goals:guest';
 };
 
-export const userUpdate = (profileData) => {
-  // Backend currently doesn't expose a profile update endpoint.
-  // Keep profile changes locally (UI-only).
-  const auth = getAuth();
-  if (!auth?.user || !auth?.token) return { success: false, message: 'User not logged in' };
-
-  const updatedUser = { ...auth.user, ...profileData };
-  setAuth({ token: auth.token, user: updatedUser });
-
-  return { success: true, data: updatedUser };
-};
+export const userUpdate = (profileData) => updateMe(profileData);
 
 export const addGoal = (goal) => {
   const auth = getAuth();

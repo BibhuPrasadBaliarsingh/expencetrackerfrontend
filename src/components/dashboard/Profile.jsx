@@ -41,21 +41,23 @@ const Profile = () => {
 
     reader.readAsDataURL(file);
   };
-
-
-  const handleProfileData = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // console.log(profileData)
-    if (password.length < 8) {
+
+    if (password && password.length < 8) {
       toast.error("Password must be at least 8 characters")
       return
     }
 
-    const response = update(profileData)
+    // Don't send empty password (means "no change")
+    const payload = { ...profileData }
+    if (!payload.password) delete payload.password
+
+    const response = await update(payload)
 
     if (response.success) {
       toast.success(response.message)
-
+      setProfileData((prev) => ({ ...prev, password: "" }))
     } else {
       toast.error(response.message)
     }
@@ -68,7 +70,7 @@ const Profile = () => {
         name: user.name || "",
         lastname: user.lastname || "",
         email: user.email || "",
-        password: user.password || "",
+        password: "",
         phone: user.phone || "",
         income: user.income || "",
         gender: user.gender || "",
@@ -91,7 +93,7 @@ const Profile = () => {
         </p>
       </div>
 
-      <form onSubmit={handleProfileData} className="space-y-10">
+      <form onSubmit={handleSubmit} className="space-y-10">
 
         {/* Profile Photo */}
         <div className="flex items-center gap-6">

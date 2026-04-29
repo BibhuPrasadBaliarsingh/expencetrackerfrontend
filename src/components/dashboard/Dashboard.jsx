@@ -48,9 +48,9 @@ const Dashboard = () => {
         </div>
 
         <ul className="flex flex-col gap-3 px-4 mt-6 capitalize">
-          {dashboardItems.map((item, index) => (
+          {dashboardItems.map((item) => (
             <Link
-              key={index}
+              key={item}
               to={`/dashboard/${item}`}
               onClick={() => setIsOpen(false)}
               className="px-4 py-3 rounded-xl
