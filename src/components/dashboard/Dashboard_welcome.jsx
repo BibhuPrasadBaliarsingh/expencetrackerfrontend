@@ -1,16 +1,20 @@
 import React, { useContext, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import AuthContext from '../../context/AuthContext'
 import Clock from 'react-clock';
 import 'react-clock/dist/Clock.css';
 
 const Dashboard_welcome = () => {
-  const { user, expenses, goals } = useContext(AuthContext)
+  const { user, expenses, goals, investments } = useContext(AuthContext)
   const [value, setValue] = useState(new Date());
 
-  const income = Number(user?.income) || 0;
-  const needs = income * 0.5;
-  const wants = income * 0.3;
-  const savings = income * 0.2;
+  const income = Number(user?.income ?? 0)
+  const hasIncome = income > 0
+  const needs = hasIncome ? income * 0.5 : 0
+  const wants = hasIncome ? income * 0.3 : 0
+  const savings = hasIncome ? income * 0.2 : 0
+
+  const formatCurrency = (value) => Number(value || 0).toLocaleString('en-IN')
 
   const expenseCategory = expenses.reduce((acc, expense) => {
     const { category, amount } = expense
@@ -52,238 +56,197 @@ const Dashboard_welcome = () => {
     }
   })
 
+  const totalExpenses = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0)
+  const totalInvested = investments.reduce((sum, investment) => sum + Number(investment.investedAmount || 0), 0)
+  const activeGoals = goals?.length || 0
+
   useEffect(() => {
     const interval = setInterval(() => setValue(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
 
-      {/* Top Section: Name + Clock */}
-      <div className="flex items-start justify-between">
+      <div className="rounded-[2rem] bg-white/90 dark:bg-[#0B1220]/90 border border-slate-200 dark:border-white/10 shadow-2xl p-8 backdrop-blur-xl">
+        <div className="flex flex-col lg:flex-row justify-between gap-6 items-start">
+          <div className="max-w-2xl">
+            <p className="text-sm uppercase tracking-[0.35em] text-teal-500 mb-3">SpendWise Dashboard</p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              Hello, {user?.name || 'Investor'}.
+            </h1>
+            <p className="text-base text-slate-500 dark:text-slate-400 max-w-xl">
+              Track your expenses, investments, goals, and savings in one beautiful place. Your financial insights are now easy to read and act on.
+            </p>
+          </div>
 
-        <div>
-          <h1 className="text-2xl font-semibold">
-            Welcome, {user?.name}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Here’s your financial dashboard
-          </p>
+          <div className="rounded-3xl bg-white/10 dark:bg-white/10 p-6 shadow-xl w-full sm:w-auto flex flex-col items-center justify-center gap-4">
+            <p className="text-sm uppercase tracking-[0.35em] text-teal-400/80">Current time</p>
+            <div className="rounded-full bg-white/20 dark:bg-white/10 p-4">
+              <Clock value={value} size={140} />
+            </div>
+            <p className="text-sm text-teal-400/80 mt-1">{value.toDateString()}</p>
+          </div>
         </div>
 
-        <div className="bg-white dark:bg-[#111C33] 
-                      rounded-2xl shadow-md p-4">
-          <Clock value={value} size={120} />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-8">
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111C33] p-5 shadow-sm">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Total Expenses</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">₹{formatCurrency(totalExpenses)}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Based on all added expenses</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111C33] p-5 shadow-sm">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Investments</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">₹{formatCurrency(totalInvested)}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Money currently invested</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111C33] p-5 shadow-sm">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Active Goals</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{activeGoals}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Goals you are currently tracking</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#111C33] p-5 shadow-sm">
+            {hasIncome ? (
+              <>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Monthly Income</p>
+                <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">₹{formatCurrency(income)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Recommended budget split by 50/30/20</p>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">No income added yet</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Add your monthly income so SpendWise can show your budget breakdown.</p>
+                <Link
+                  to="/dashboard/profile"
+                  className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white px-4 py-2 text-sm font-medium hover:bg-teal-500 transition"
+                >
+                  Add Income
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_0.9fr] gap-6">
+        <div className="space-y-6">
+          {hasIncome && (
+            <div className="rounded-3xl bg-white dark:bg-[#111C33] border border-slate-200 dark:border-white/10 shadow-xl p-6">
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Monthly Budget</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Your target spending split</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { label: 'Needs', value: needs, color: 'from-teal-500 to-cyan-400' },
+                  { label: 'Wants', value: wants, color: 'from-indigo-500 to-violet-500' },
+                  { label: 'Savings', value: savings, color: 'from-emerald-500 to-lime-500' },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-3xl bg-slate-50 dark:bg-[#0B1220] p-4 border border-slate-200 dark:border-white/10">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{item.label} ({item.label === 'Needs' ? '50%' : item.label === 'Wants' ? '30%' : '20%'})</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">₹{formatCurrency(item.value)}</span>
+                    </div>
+                    <div className="mt-3 h-3 rounded-full bg-slate-200 dark:bg-[#111C33] overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${item.color}`} style={{ width: `${item.label === 'Needs' ? 50 : item.label === 'Wants' ? 30 : 20}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-        {/* Budget Table */}
-        {user?.income && (
-          <div className="bg-white dark:bg-[#111C33] 
-                        rounded-2xl shadow-md p-6">
-
-            <h3 className="text-lg font-semibold mb-4">
-              Monthly Budget
-            </h3>
-
-            <table className="w-full text-sm">
-
-              <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-white/10">
-                <tr>
-                  <th className="py-3 font-medium">Category</th>
-                  <th className="py-3 font-medium text-right">Amount</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-
-                <tr>
-                  <td className="py-4">Needs (50%)</td>
-                  <td className="py-4 text-right font-semibold">
-                    ₹ {needs.toLocaleString()}
-                  </td>
-                </tr>
-
-                <tr>
-                  <td className="py-4">Wants (30%)</td>
-                  <td className="py-4 text-right font-semibold">
-                    ₹ {wants.toLocaleString()}
-                  </td>
-                </tr>
-
-                <tr>
-                  <td className="py-4">Savings (20%)</td>
-                  <td className="py-4 text-right font-semibold">
-                    ₹ {savings.toLocaleString()}
-                  </td>
-                </tr>
-
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Expense Category Summary */}
-        <div className="bg-white dark:bg-[#111C33] 
-                      rounded-2xl shadow-md p-6">
-
-          <h3 className="text-lg font-semibold mb-4">
-            Expense by Category
-          </h3>
-
-          <table className="w-full text-sm">
-
-            <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="py-3 font-medium">Category</th>
-                <th className="py-3 font-medium text-right">Total</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-
+          <div className="rounded-3xl bg-white dark:bg-[#111C33] border border-slate-200 dark:border-white/10 shadow-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Expense by Category</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Quick view of your spending categories</p>
+              </div>
+            </div>
+            <div className="space-y-3">
               {categoryTable.length === 0 ? (
-                <tr>
-                  <td className="py-4 text-gray-500">
-                    No expenses added
-                  </td>
-                  <td />
-                </tr>
+                <p className="text-sm text-slate-500 dark:text-slate-400">No expenses added yet.</p>
               ) : (
                 categoryTable.map(([category, total]) => (
-                  <tr key={category}>
-                    <td className="py-4">{category}</td>
-                    <td className="py-4 text-right font-semibold">
-                      ₹ {total.toLocaleString()}
-                    </td>
-                  </tr>
+                  <div key={category} className="flex items-center justify-between rounded-3xl bg-slate-50 dark:bg-[#0B1220] p-4 border border-slate-200 dark:border-white/10">
+                    <div>
+                      <p className="font-medium text-slate-900 dark:text-white">{category}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{((total / (totalExpenses || 1)) * 100).toFixed(0)}% of spending</p>
+                    </div>
+                    <p className="font-semibold text-slate-900 dark:text-white">₹{formatCurrency(total)}</p>
+                  </div>
                 ))
               )}
-
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
 
-        {/* Investment Table */}
-        <div className="bg-white dark:bg-[#111C33] 
-                    rounded-2xl shadow-md p-6">
+        <div className="space-y-6">
+          <div className="rounded-3xl bg-white dark:bg-[#111C33] border border-slate-200 dark:border-white/10 shadow-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Investments</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Your current investment snapshot</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {investments?.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">You haven't added any investments yet.</p>
+              ) : (
+                investments.map((investment) => (
+                  <div key={investment.id} className="rounded-3xl bg-slate-50 dark:bg-[#0B1220] p-4 border border-slate-200 dark:border-white/10">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h4 className="font-semibold text-slate-900 dark:text-white">{investment.title || investment.investmentType}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{investment.investmentType} • {investment.investmentDate}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-slate-900 dark:text-white">₹{formatCurrency(investment.investedAmount)}</p>
+                        <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">ROI {investment.interestRate ?? 0}%</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-          <h3 className="text-lg font-semibold mb-4">
-            Investments
-          </h3>
-
-          <table className="w-full text-sm">
-
-            <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="py-3 font-medium">Type</th>
-                <th className="py-3 font-medium text-right">Amount</th>
-                <th className="py-3 font-medium text-right">Return %</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-
-              {/* Example static data – later replace with investment state */}
-              <tr>
-                <td className="py-4">Mutual Fund</td>
-                <td className="py-4 text-right font-semibold">₹ 50,000</td>
-                <td className="py-4 text-right">12%</td>
-              </tr>
-
-              <tr>
-                <td className="py-4">Stocks</td>
-                <td className="py-4 text-right font-semibold">₹ 30,000</td>
-                <td className="py-4 text-right">15%</td>
-              </tr>
-
-            </tbody>
-          </table>
-
-        </div>
-
-        {/* Goal Progress Table */}
-        <div className="bg-white dark:bg-[#111C33] 
-                rounded-2xl shadow-md p-6">
-
-          <h3 className="text-lg font-semibold mb-4">
-            Goal Progress
-          </h3>
-
-          <table className="w-full text-sm">
-
-            <thead className="text-left text-gray-500 border-b border-gray-200 dark:border-white/10">
-              <tr>
-                <th className="py-3 font-medium">Goal</th>
-                <th className="py-3 font-medium text-right">Target</th>
-                <th className="py-3 font-medium text-right">Saved</th>
-                <th className="py-3 font-medium">Progress</th>
-                <th className="py-3 font-medium text-right">Monthly Needed</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-gray-200 dark:divide-white/10">
-
+          <div className="rounded-3xl bg-white dark:bg-[#111C33] border border-slate-200 dark:border-white/10 shadow-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Goal Progress</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Track how close your goals are</p>
+              </div>
+            </div>
+            <div className="space-y-4">
               {goalTable?.length === 0 ? (
-                <tr>
-                  <td className="py-4 text-gray-500">
-                    No goals created
-                  </td>
-                  <td />
-                  <td />
-                  <td />
-                  <td />
-                </tr>
+                <p className="text-sm text-slate-500 dark:text-slate-400">No goals created yet.</p>
               ) : (
                 goalTable.map(goal => (
-                  <tr key={goal.id}>
-
-                    <td className="py-4 font-medium">
-                      {goal.title}
-                    </td>
-
-                    <td className="py-4 text-right">
-                      ₹ {goal.targetAmount.toLocaleString()}
-                    </td>
-
-                    <td className="py-4 text-right">
-                      ₹ {goal.savedAmount.toLocaleString()}
-                    </td>
-
-                    <td className="py-4 w-48">
-                      <div className="w-full bg-gray-200 dark:bg-[#0B1220] rounded-full h-2">
-                        <div
-                          className="bg-teal-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(goal.progress, 100)}%` }}
-                        />
+                  <div key={goal.id} className="rounded-3xl bg-slate-50 dark:bg-[#0B1220] p-4 border border-slate-200 dark:border-white/10">
+                    <div className="flex items-center justify-between gap-4 mb-2">
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white">{goal.title}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Target ₹{formatCurrency(goal.targetAmount)}</p>
                       </div>
-                      <p className="text-xs mt-1 text-gray-500">
-                        {goal.progress.toFixed(1)}%
-                      </p>
-                    </td>
-
-                    <td className="py-4 text-right font-semibold">
-                      ₹ {goal.monthlyRequired.toLocaleString(undefined, {
-                        maximumFractionDigits: 0
-                      })}
-                    </td>
-
-                  </tr>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{goal.progress.toFixed(1)}%</p>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-slate-200 dark:bg-[#111C33] overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 transition-all duration-500" style={{ width: `${Math.min(goal.progress, 100)}%` }} />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <span>Saved ₹{formatCurrency(goal.savedAmount)}</span>
+                      <span>Needs ₹{formatCurrency(goal.monthlyRequired)}/mo</span>
+                    </div>
+                  </div>
                 ))
               )}
-
-            </tbody>
-          </table>
-
+            </div>
+          </div>
         </div>
       </div>
-
-
     </div>
   )
 }

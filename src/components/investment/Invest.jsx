@@ -220,7 +220,7 @@ const Invest = () => {
                     {inv.title}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {inv.investmentType} â€¢ {inv.investmentDate}
+                    {inv.investmentType} • {inv.investmentDate}
                   </p>
                   {inv.remarks ? (
                     <p className="text-xs text-gray-400 mt-1">{inv.remarks}</p>
@@ -229,7 +229,7 @@ const Invest = () => {
 
                 <div className="text-left sm:text-right">
                   <p className="text-lg font-bold text-teal-600">
-                    â‚¹{inv.investedAmount}
+                    ₹{inv.investedAmount}
                   </p>
                   <p className="text-xs text-gray-500">
                     ROI: {inv.interestRate}%
