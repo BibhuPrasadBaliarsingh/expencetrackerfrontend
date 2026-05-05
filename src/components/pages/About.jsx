@@ -97,7 +97,6 @@ const About = () => {
           </p>
 
           <div className="mt-10">
-            <p className="font-semibold text-gray-900">Swasti B. Nayak</p>
             <p className="text-gray-600 text-sm">
               Founder & CEO, SpendWise
             </p>
