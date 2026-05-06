@@ -98,7 +98,7 @@ const Navbar = () => {
             className="w-10 rounded-full hover:scale-105 transition"
           />
           <h4 className="text-teal-500 dark:text-gray-200 text-2xl font-semibold">
-            Spend<span className="text-yellow-400">Wise</span>
+            Arth<span className="text-yellow-400">Wise</span>
           </h4>
         </div>
       </Link>
