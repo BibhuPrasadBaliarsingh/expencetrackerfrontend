@@ -3,6 +3,7 @@ import AuthContext from '../../context/AuthContext'
 import { toast } from 'react-toastify'
 
 const ExpenseForm = () => {
+  const todayString = new Date().toISOString().slice(0, 10)
 
   const initialState = {
     title: "",
@@ -29,14 +30,20 @@ const ExpenseForm = () => {
 
 
   const handleExpenseData = async (e) => {
-  e.preventDefault()
-  let response
+    e.preventDefault()
 
-  if (doEditExpense) {
-    response = await editExpense(expenseData)
-  } else {
-    response = await addNewExpense(expenseData)
-  }
+    if (date && date > todayString) {
+      toast.error("Expense date cannot be in the future.")
+      return
+    }
+
+    let response
+
+    if (doEditExpense) {
+      response = await editExpense(expenseData)
+    } else {
+      response = await addNewExpense(expenseData)
+    }
 
   if (response.success) {
     toast.success(doEditExpense ? "Expense updated" : "Expense added")
@@ -153,6 +160,7 @@ const ExpenseForm = () => {
               value={date}
               onChange={handleChange}
               type="date"
+              max={todayString}
               required
               className="w-full px-4 py-3 rounded-xl 
                         bg-gray-100 dark:bg-[#0B1220]

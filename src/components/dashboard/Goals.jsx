@@ -3,6 +3,8 @@ import { toast } from 'react-toastify'
 import AuthContext from '../../context/AuthContext'
 
 const Goals = () => {
+  const todayString = new Date().toISOString().slice(0, 10)
+
   const initialState = {
     id: "",
     title: "",
@@ -17,15 +19,16 @@ const Goals = () => {
   const { title, targetAmount, category, lastdate, description } = goalsData
 
   const calculateMonths = (targetDate) => {
-    const today = new Date();
-    const end = new Date(targetDate);
+    const today = new Date(todayString)
+    const end = new Date(targetDate)
 
-    if (end <= today) return 0;
+    if (end < today) return 0
 
-    const yearDiff = end.getFullYear() - today.getFullYear();
-    const monthDiff = end.getMonth() - today.getMonth();
+    const yearDiff = end.getFullYear() - today.getFullYear()
+    const monthDiff = end.getMonth() - today.getMonth()
+    const months = yearDiff * 12 + monthDiff
 
-    return yearDiff * 12 + monthDiff;
+    return months === 0 ? 1 : months
   };
 
   const handleChange = (e) => {
@@ -37,10 +40,15 @@ const Goals = () => {
   const handleGoalsData = (e) => {
     e.preventDefault();
 
+    if (!lastdate || lastdate < todayString) {
+      toast.error("Please select today or a future date.");
+      return;
+    }
+
     const months = calculateMonths(lastdate);
 
     if (months <= 0) {
-      toast.error("Please select a future date");
+      toast.error("Please select today or a future date.");
       return;
     }
 
@@ -171,6 +179,7 @@ const Goals = () => {
               value={lastdate}
               onChange={handleChange}
               type="date"
+              min={todayString}
               required
               className="w-full px-4 py-3 rounded-xl 
                         bg-gray-100 dark:bg-[#0B1220]
