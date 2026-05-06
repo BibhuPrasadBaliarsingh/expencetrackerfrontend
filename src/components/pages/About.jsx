@@ -17,7 +17,7 @@ const About = () => {
         {/* LEFT CONTENT */}
         <div>
           <span className="inline-block bg-green-600/20 text-green-400 px-4 py-1 rounded-full text-sm mb-6">
-            About SpendWise
+            About ArthWise
           </span>
 
           <h2 className="text-5xl font-bold text-white leading-tight">
@@ -27,7 +27,7 @@ const About = () => {
           </h2>
 
           <p className="mt-6 text-gray-300 text-lg leading-relaxed">
-            SpendWise was born from a simple idea: managing money shouldn't be
+            ArthWise was born from a simple idea: managing money shouldn't be
             complicated. Our team of financial experts and tech innovators came
             together to create an intelligent platform that understands your
             unique financial situation.
@@ -98,7 +98,7 @@ const About = () => {
 
           <div className="mt-10">
             <p className="text-gray-600 text-sm">
-              Founder & CEO, SpendWise
+              Founder & CEO, ArthWise
             </p>
           </div>
         </div>

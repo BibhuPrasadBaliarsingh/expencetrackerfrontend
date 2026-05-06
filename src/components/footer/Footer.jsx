@@ -57,7 +57,7 @@ const Footer = () => {
 
       {/* Bottom Section */}
       <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
-        <p>© 2026 SpendWise. All rights reserved.</p>
+        <p>© 2026 ArthWise. All rights reserved.</p>
         <p>
           Made with <span className="text-red-500">❤️</span> for your financial
           freedom

@@ -71,7 +71,7 @@ const Dashboard_welcome = () => {
       <div className="rounded-[2rem] bg-white/90 dark:bg-[#0B1220]/90 border border-slate-200 dark:border-white/10 shadow-2xl p-8 backdrop-blur-xl">
         <div className="flex flex-col lg:flex-row justify-between gap-6 items-start">
           <div className="max-w-2xl">
-            <p className="text-sm uppercase tracking-[0.35em] text-teal-500 mb-3">SpendWise Dashboard</p>
+            <p className="text-sm uppercase tracking-[0.35em] text-teal-500 mb-3">ArthWise Dashboard</p>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
               Hello, {user?.name || 'Investor'}.
             </h1>
@@ -115,7 +115,7 @@ const Dashboard_welcome = () => {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">No income added yet</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Add your monthly income so SpendWise can show your budget breakdown.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Add your monthly income so ArthWise can show your budget breakdown.</p>
                 <Link
                   to="/dashboard/profile"
                   className="inline-flex items-center justify-center rounded-full bg-teal-600 text-white px-4 py-2 text-sm font-medium hover:bg-teal-500 transition"

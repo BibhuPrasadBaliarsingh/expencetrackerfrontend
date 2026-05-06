@@ -41,7 +41,7 @@ const Dashboard = () => {
 
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/10">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-teal-500">SpendWise</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-teal-500">ArthWise</p>
             <h1 className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">Dashboard</h1>
           </div>
 

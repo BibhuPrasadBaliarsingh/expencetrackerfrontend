@@ -81,8 +81,8 @@ const Contact = () => {
                 {
                   icon: <MdOutlineEmail />,
                   label: "Email Us",
-                  value: "hello@spendwise.com",
-                  href: "mailto:hello@spendwise.com",
+                  value: "hello@arthwise.com",
+                  href: "mailto:hello@arthwise.com",
                 },
                 {
                   icon: <FaPhoneAlt />,

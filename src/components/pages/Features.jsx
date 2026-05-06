@@ -24,7 +24,7 @@ const Features = () => {
                                  bg-white dark:bg-[#111C33]
                                  text-gray-600 dark:text-gray-300
                                  shadow-sm'>
-                    ✨ Why Choose SpendWise
+                    ✨ Why Choose ArthWise
                 </span>
 
                 {/* Heading */}
